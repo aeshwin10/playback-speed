@@ -33,7 +33,8 @@ A browser extension that automatically applies your preferred playback speeds to
 
 ## Features
 
-- Automatically applies saved speeds when you visit a YouTube channel
+- Automatically applies saved speeds when you visit a YouTube channel 
+ (I use it for channels like Neso Academy, Take U Forward, Gate Smashers, etc...) (Just too lazy to click on 2x everytime😛) 
 - Tracks total time saved across all channels
 - Clean, minimalist interface
 
