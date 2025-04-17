@@ -27,6 +27,8 @@ A browser extension that automatically applies your preferred playback speeds to
    - Enable "Developer mode"
    - Click "Load unpacked" and select the `dist` folder
  ![image](https://github.com/user-attachments/assets/cfb7861c-0ad6-4ae9-b11c-d5a16631e934)
+ ![image](https://github.com/user-attachments/assets/5d77da51-9282-4bb3-bece-33367ce69253)
+
 
 
 ## Features
