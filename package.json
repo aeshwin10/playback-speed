@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b || cmd /c exit 0 && vite build && npm run postbuild",
-    "postbuild": "node scripts/move-html.js",
+    "postbuild": "node scripts/move-html.cjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },
