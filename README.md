@@ -8,7 +8,7 @@ A browser extension that automatically applies your preferred playback speeds to
 
 1. Clone the repository:
    ```powershell
-   git clone https://github.com/YourUsername/playback-speed.git
+   git clone https://github.com/aeshwin10/playback-speed.git 
    cd playback-speed
    ```
 
