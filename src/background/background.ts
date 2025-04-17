@@ -10,24 +10,50 @@ interface ChannelSpeed {
 
 // Listen for tab updates (when a page loads or changes)
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  // Check if the page has finished loading and is a YouTube video
-  if (changeInfo.status === "complete" && tab.url && tab.url.includes("youtube.com/watch")) {
-    console.log("YouTube video page detected, applying saved speed...");
+  // Check if the URL is a YouTube video (even before the page is fully loaded)
+  if (tab.url && tab.url.includes("youtube.com/watch")) {
+    console.log("YouTube video URL detected:", tab.url);
     
-    try {
-      // Get saved channel speeds from storage
-      const savedData = await chrome.storage.local.get("channelSpeeds");
-      const channelSpeeds: ChannelSpeed[] = savedData.channelSpeeds || [];
-      console.log("Retrieved saved channel speeds:", channelSpeeds);
+    // If the page is loading, wait for it to complete
+    if (changeInfo.status === "complete") {
+      console.log("Page fully loaded, applying playback speed...");
       
-      // Execute content script to apply the speed
-      chrome.scripting.executeScript({
-        target: { tabId: tabId },
-        func: applySpeedForChannel,
-        args: [channelSpeeds]
-      });
-    } catch (error) {
-      console.error("Error in background script:", error);
+      try {
+        // Get saved channel speeds from storage
+        const savedData = await chrome.storage.local.get("channelSpeeds");
+        const channelSpeeds: ChannelSpeed[] = savedData.channelSpeeds || [];
+        console.log("Retrieved saved channel speeds:", channelSpeeds.length);
+        
+        // Execute content script to apply the speed - run immediately
+        chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          func: applySpeedForChannel,
+          args: [channelSpeeds]
+        });
+        
+        // Also set up a delayed execution to handle cases where YouTube loads content dynamically
+        setTimeout(() => {
+          chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            func: applySpeedForChannel,
+            args: [channelSpeeds]
+          }).catch(e => console.error("Error in delayed script execution:", e));
+        }, 2000);  // Try again after 2 seconds
+        
+        // And try once more after a longer delay for really slow loads
+        setTimeout(() => {
+          chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            func: applySpeedForChannel,
+            args: [channelSpeeds]
+          }).catch(e => console.error("Error in final script execution:", e));
+        }, 5000);  // Try again after 5 seconds
+        
+      } catch (error) {
+        console.error("Error in background script:", error);
+      }
+    } else if (changeInfo.status === "loading") {
+      console.log("YouTube page is loading...");
     }
   }
 });
@@ -35,27 +61,58 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 // This function runs in the context of the web page
 function applySpeedForChannel(channelSpeeds: ChannelSpeed[]) {
   console.log("Running applySpeedForChannel with data:", channelSpeeds);
-  
-  // Helper function to detect channel name using multiple methods
+    // Helper function to detect channel name using multiple methods
   function getChannelName() {
+    // Method 1: Using DOM selectors (most common approach)
     const selectors = [
       'ytd-channel-name a',
-      '#top-row ytd-channel-name',
+      '#top-row ytd-channel-name a',
       '#owner-text a',
       '.ytd-video-owner-renderer .ytd-channel-name',
       'span[itemprop="author"] [itemprop="name"]',
       '#channel-name',
-      '#meta-contents #channel-name .ytd-channel-name'
+      '#meta-contents #channel-name .ytd-channel-name',
+      'ytd-video-owner-renderer .ytd-channel-name a',
+      '#above-the-fold #text.ytd-channel-name',
+      'yt-formatted-string.ytd-channel-name'
     ];
     
     for (const selector of selectors) {
-      const element = document.querySelector(selector);
-      if (element && element.textContent) {
-        const name = element.textContent.trim();
-        if (name) return name;
+      const elements = document.querySelectorAll(selector);
+      for (const element of elements) {
+        if (element && element.textContent) {
+          const name = element.textContent.trim();
+          if (name) return name;
+        }
       }
     }
+
+    // Method 2: Using YouTube's structured data
+    try {
+      const ldJson = document.querySelector('script[type="application/ld+json"]');
+      if (ldJson && ldJson.textContent) {
+        const data = JSON.parse(ldJson.textContent);
+        if (data && data.author && data.author.name) {
+          return data.author.name;
+        }
+      }
+    } catch (e) {
+      console.log("Error parsing structured data:", e);
+    }
+
+    // Method 3: Using the page URL (fallback)
+    const channelUrl = window.location.href.match(/youtube\.com\/(c|channel|user)\/([^\/\?]+)/);
+    if (channelUrl && channelUrl[2]) {
+      return decodeURIComponent(channelUrl[2]);
+    }
     
+    // Method 4: Looking at video description metadata
+    const metaAuthor = document.querySelector('meta[name="author"]');
+    if (metaAuthor && metaAuthor.getAttribute('content')) {
+      return metaAuthor.getAttribute('content');
+    }
+
+    console.log("Failed to detect channel name with any method");
     return null;
   }
     // Show notification when speed is applied
