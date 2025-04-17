@@ -28,16 +28,16 @@ const Popup: React.FC = () => {
       }
 
       // Get channel name from the current tab
-      try {
-        const [result] = await chrome.scripting.executeScript({
+      try {        const [result] = await chrome.scripting.executeScript({
           target: { tabId: tab.id! },
           func: () => {
             const channelLink = document.querySelector('ytd-channel-name a');
             return channelLink?.textContent?.trim() || null;
-          }
-        });
+          }        });
         
-        setCurrentChannel(result.result);
+        // Ensure we only pass string or null, never undefined
+        const channelName = typeof result.result === 'string' ? result.result : null;
+        setCurrentChannel(channelName);
         
         // Get saved channel data
         const savedData = await getFromStorage<ChannelSpeed[]>("channelSpeeds") || [];
@@ -72,7 +72,6 @@ const Popup: React.FC = () => {
       }
     });
   }, []);
-
   const handleSpeedChange = async (speed: number) => {
     if (!currentChannel) return;
     
@@ -99,6 +98,10 @@ const Popup: React.FC = () => {
     
     if (existingChannel) {
       existingChannel.speed = speed;
+      // Make sure watchTime exists
+      if (typeof existingChannel.watchTime !== 'number') {
+        existingChannel.watchTime = 0;
+      }
     } else {
       updatedChannels.push({
         channelName: currentChannel,
