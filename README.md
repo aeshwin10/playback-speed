@@ -23,9 +23,11 @@ A browser extension that automatically applies your preferred playback speeds to
    ```
 
 4. Load it in Chrome/Edge:
-   - Go to extensions page (chrome://extensions)
+   - Go to extensions page (chrome://extensions) or (breave:://extensions)
    - Enable "Developer mode"
    - Click "Load unpacked" and select the `dist` folder
+ ![image](https://github.com/user-attachments/assets/cfb7861c-0ad6-4ae9-b11c-d5a16631e934)
+
 
 ## Features
 
